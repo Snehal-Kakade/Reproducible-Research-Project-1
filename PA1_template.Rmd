@@ -1,0 +1,148 @@
+---
+title: "Reproducible Research Project 1"
+author: "Snehal Kakade"
+date: "October 4, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+=================================================================================================
+
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+##Loading and preprocessing the data
+==================================================
+The variables included in this dataset are:
+
+1) steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+
+2) date: The date on which the measurement was taken in YYYY-MM-DD format
+
+3) interval: Identifier for the 5-minute interval in which measurement was taken
+
+#Code for loading and preprocessing the data
+
+```{r Load Data}
+
+activityData <- read.csv("activity.csv",header = TRUE)
+rawData <- read.csv("activity.csv",header = TRUE)
+activityData <- activityData[!is.na(activityData$steps),]
+head(activityData)
+```
+=================================================================================================
+
+##What is mean total number of steps taken per day?
+====================================================
+
+#Code for calculating the total number of steps taken per day
+
+```{r Calculate total number of steps per day}
+totalperdate <- aggregate(steps ~ date,activityData,sum)
+```
+
+#Code for histogram of the total number of steps taken each day
+
+```{r Histogram of total number of steps taken each day}
+hist(totalperdate$steps,xlab="Steps",main="Histogram of total steps taken per day")
+```
+
+#Code for calculating mean total number of steps taken per day
+
+```{r Calculate mean total number of steps taken}
+r_mean <- as.integer(mean(totalperdate$steps))
+print(paste("The mean is: ", r_mean))
+```
+
+#Code for calculating median total number of steps taken per day
+
+```{r Calculate median total number of steps taken}
+r_median <- as.integer(median(totalperdate$steps))
+print(paste("The median is: ", r_median))
+```
+=================================================================================================
+
+##What is the average daily activity pattern?
+=====================================================
+
+#Code for plotting 5-minute interval & the average number of steps taken, averaged across all days
+
+```{r Plot}
+meanperinterval <- aggregate(steps ~ interval,activityData,mean)
+
+plot(meanperinterval$interval, meanperinterval$steps, type="l", main="Average Steps per Five Minute Interval",
+     xlab="Interval No.", ylab="steps")
+```
+
+#Code for calculating which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps
+
+```{r Calculate interval with maximum no of steps}
+maxsteps <- max(meanperinterval$steps)
+maxinterval <- meanperinterval[meanperinterval$steps==maxsteps,1]
+print(paste("The maximum number of steps in a five minute interval was: ", maxsteps))
+print(paste("The 5-minute interval which had the maximum number of steps was: ", maxinterval))
+```
+=================================================================================================
+
+##Imputing missing values
+=====================================================
+
+#Code for calculating the total number of missing values in the dataset 
+
+```{r Calculate total number of missing values}
+missingdata <- sum(is.na(rawData$steps))
+print(paste("There are", missingdata, "missing values."))
+```
+
+#Code for devising a strategy for filling in all of the missing values in the dataset. We will fill all NA values with the median value.
+
+```{r Replace missing values}
+nonNAData <- rawData
+nonNAData$steps[is.na(nonNAData$steps)] <- median(rawData$steps, na.rm=TRUE)
+```
+
+#Code for calculating the total number of steps taken per day with adjusted dataset
+
+```{r Calculate total number of steps per day with adjusted data}
+totalsteps <- aggregate(steps ~ date,nonNAData,sum,na.rm=TRUE)
+```
+
+#Code for histogram of the total number of steps taken each day with adjusted dataset
+
+```{r Histogram of total number of steps taken each day with adjusted data}
+hist(totalsteps$steps,breaks=10,xlab="Steps",main="Histogram of total steps taken per day with adjusted missing values")
+```
+
+#Code for calculating mean total number of steps taken per day with adjusted dataset
+
+```{r Calculate mean total number of steps taken with adjusted data}
+b_mean <- as.integer(mean(nonNAData$steps))
+print(paste("The mean is: ", b_mean))
+```
+
+#Code for calculating median total number of steps taken per day with adjusted dataset
+
+```{r Calculate median total number of steps taken with adjusted data}
+b_median <- as.integer(median(nonNAData$steps))
+print(paste("The median is: ", b_median))
+```
+=================================================================================================
+
+##Differences in activity patterns between weekdays and weekends
+==========================================================================
+#Code for plotting the differences in activity patterns between weekdays and weekends.
+
+```{r Calculate weekdays and weekends}
+nonNAData$date <- as.Date(nonNAData$date)
+nonNAData$dayname <- weekdays(nonNAData$date)
+nonNAData$weekend <- as.factor(ifelse(nonNAData$dayname == "Saturday" |
+                                 nonNAData$dayname == "Sunday", "weekend", "weekday"))
+head(nonNAData,10)
+
+library(lattice)
+plotdata <- aggregate(steps ~ interval + weekend, nonNAData, mean)
+xyplot(steps ~ interval | factor(weekend), data=plotdata, aspect=1/3, type="l")
+```
+=================================================================================================
